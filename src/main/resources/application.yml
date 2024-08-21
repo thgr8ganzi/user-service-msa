@@ -26,3 +26,16 @@ eureka:
 
 greeting:
   message: Hello from User Service
+
+logging:
+  level:
+    com:
+      example:
+        userservice:
+          controller: DEBUG
+          service: DEBUG
+          repository: DEBUG
+
+token:
+  expiration_time: 86400000
+  secret: user_token
