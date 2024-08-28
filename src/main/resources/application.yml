@@ -36,6 +36,7 @@ logging:
           controller: DEBUG
           service: DEBUG
           repository: DEBUG
+          client: DEBUG
 
 management:
   endpoints:
