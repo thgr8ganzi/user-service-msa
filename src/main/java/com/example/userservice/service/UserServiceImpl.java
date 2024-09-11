@@ -8,6 +8,8 @@ import com.example.userservice.vo.ResponseOrder;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.modelmapper.convention.MatchingStrategies;
+import org.springframework.cloud.client.circuitbreaker.CircuitBreaker;
+import org.springframework.cloud.client.circuitbreaker.CircuitBreakerFactory;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.env.Environment;
 import org.springframework.http.HttpMethod;
@@ -31,13 +33,15 @@ public class UserServiceImpl implements UserService{
     private final Environment env;
     private final RestTemplate restTemplate;
     private final OrderServiceClient orderServiceClient;
+    private final CircuitBreakerFactory circuitBreakerFactory;
 
-    public UserServiceImpl(UserRepository userRepository, BCryptPasswordEncoder passwordEncoder, Environment env, RestTemplate restTemplate, OrderServiceClient orderServiceClient) {
+    public UserServiceImpl(UserRepository userRepository, BCryptPasswordEncoder passwordEncoder, Environment env, RestTemplate restTemplate, OrderServiceClient orderServiceClient, CircuitBreakerFactory circuitBreakerFactory) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.env = env;
         this.restTemplate = restTemplate;
         this.orderServiceClient = orderServiceClient;
+        this.circuitBreakerFactory = circuitBreakerFactory;
     }
 
     @Override
@@ -70,7 +74,15 @@ public class UserServiceImpl implements UserService{
 //        } catch (Exception e) {
 //            log.error(e.getLocalizedMessage());
 //        }
-        List<ResponseOrder> ordersList = orderServiceClient.getOrders(userId);
+
+//        ErrorDecoder
+//        List<ResponseOrder> ordersList = orderServiceClient.getOrders(userId);
+//        userDto.setOrders(ordersList);
+
+        log.info("Before call orders microservice");
+        CircuitBreaker circuitBreaker = circuitBreakerFactory.create("circuitbreaker");
+        List<ResponseOrder> ordersList = circuitBreaker.run(() -> orderServiceClient.getOrders(userId), throwable -> new ArrayList<>());
+        log.info("After call orders microservice");
         userDto.setOrders(ordersList);
 
         return userDto;
